@@ -1,0 +1,25 @@
+# Entornos virtuales
+env/
+venv/
+.venv/
+
+# Bytecode de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs de sesion (pueden contener datos sensibles)
+logs/*
+!logs/.gitkeep
+
+# Archivos locales / editor
+.env
+*.bak
+.vscode/
+.idea/
+.DS_Store
+
+# GNS3 (no forma parte de la entrega del script)
+*.gns3
+*.gns3a
+project-files/
