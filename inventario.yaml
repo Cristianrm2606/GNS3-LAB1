@@ -5,8 +5,7 @@
 # ============================================================================
 
 # Numero de lista N del estudiante. Se usa para nombrar lo-ssh-<N> y 10.253.0.<N>/32.
-# CAMBIAR por el N real asignado por el profesor.
-estudiante: 7
+estudiante: 26
 
 # Nombre del estudiante. Va en el comentario de los objetos que se crean.
 estudiante_nombre: "Cristian Rojas Morales"
