@@ -1,0 +1,51 @@
+### Ejecuciones reales del Lab 1 - 2026-10-19 22:10:20 - Debian vbox - N=26
+
+$ LAB_PASS_CISCO_LAB=mala python lab1_inventario.py --estado    # R3: error de autenticacion sin detener el script
+Inventario: /media/sf_REDES/Semana 3/LAB1/lab1-carne/inventario.yaml
+Estudiante N=26 (Cristian Rojas Morales) | equipos: 2
+Reporte escrito en: /media/sf_REDES/Semana 3/LAB1/lab1-carne/reporte_estado.json
+Logs de sesion en: /media/sf_REDES/Semana 3/LAB1/lab1-carne/logs
+
+EQUIPO       IP              ESTADO   IFACES GATEWAY         
+-------------------------------------------------------------
+mt-lab       10.60.30.202    ok            2 10.60.30.1      
+cisco-lab    10.60.30.203    error         0 -               
+  [lo-ssh] mt-lab: sin cambios - modo --estado (no aplica)
+  [REST]   mt-lab: SSH vs REST -> {'nombre': True, 'gateway': True, 'interfaces': True}
+  [!] cisco-lab: Autenticacion: Authentication to device failed.
+
+Common causes of this problem are:
+1. Invalid username and password
+2. Incorrect SSH-key file
+3. Connecting to the wrong device
+
+Device settings: cisco_ios 10.60.30.203:22
+
+
+Authentication failed.
+
+$ python lab1_inventario.py    # 1.a ejecucion: crea lo-ssh-26
+Inventario: /media/sf_REDES/Semana 3/LAB1/lab1-carne/inventario.yaml
+Estudiante N=26 (Cristian Rojas Morales) | equipos: 2
+Reporte escrito en: /media/sf_REDES/Semana 3/LAB1/lab1-carne/reporte_estado.json
+Logs de sesion en: /media/sf_REDES/Semana 3/LAB1/lab1-carne/logs
+
+EQUIPO       IP              ESTADO   IFACES GATEWAY         
+-------------------------------------------------------------
+mt-lab       10.60.30.202    ok            2 10.60.30.1      
+cisco-lab    10.60.30.203    ok            2 10.60.30.1      
+  [lo-ssh] mt-lab: aplicado - lo-ssh-26 con 10.253.0.26/32
+  [REST]   mt-lab: SSH vs REST -> {'nombre': True, 'gateway': True, 'interfaces': True}
+
+$ python lab1_inventario.py    # 2.a ejecucion: debe decir sin cambios
+Inventario: /media/sf_REDES/Semana 3/LAB1/lab1-carne/inventario.yaml
+Estudiante N=26 (Cristian Rojas Morales) | equipos: 2
+Reporte escrito en: /media/sf_REDES/Semana 3/LAB1/lab1-carne/reporte_estado.json
+Logs de sesion en: /media/sf_REDES/Semana 3/LAB1/lab1-carne/logs
+
+EQUIPO       IP              ESTADO   IFACES GATEWAY         
+-------------------------------------------------------------
+mt-lab       10.60.30.202    ok            3 10.60.30.1      
+cisco-lab    10.60.30.203    ok            2 10.60.30.1      
+  [lo-ssh] mt-lab: sin cambios - lo-ssh-26 ya existia
+  [REST]   mt-lab: SSH vs REST -> {'nombre': True, 'gateway': True, 'interfaces': True}

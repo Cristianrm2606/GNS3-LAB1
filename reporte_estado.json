@@ -1,0 +1,88 @@
+{
+  "generado": "2026-10-19T22:10:51",
+  "estudiante": 26,
+  "etiqueta": "LAB1-ITIEL13",
+  "equipos": [
+    {
+      "nombre": "mt-lab",
+      "host": "10.60.30.202",
+      "device_type": "mikrotik_routeros",
+      "rol": "escritura",
+      "estado": "ok",
+      "error": null,
+      "datos": {
+        "nombre": "MikroTik-LAB1",
+        "uptime": "16m3s",
+        "interfaces": [
+          {
+            "interfaz": "ether1",
+            "ip": "10.60.30.202/24"
+          },
+          {
+            "interfaz": "ether2",
+            "ip": "192.168.20.1/24"
+          },
+          {
+            "interfaz": "lo-ssh-26",
+            "ip": "10.253.0.26/32"
+          }
+        ],
+        "gateway": "10.60.30.1"
+      },
+      "cambio": {
+        "resultado": "sin cambios",
+        "detalle": "lo-ssh-26 ya existia"
+      },
+      "rest": {
+        "nombre": "MikroTik-LAB1",
+        "uptime": "16m4s",
+        "interfaces": [
+          {
+            "interfaz": "ether1",
+            "ip": "10.60.30.202/24"
+          },
+          {
+            "interfaz": "ether2",
+            "ip": "192.168.20.1/24"
+          },
+          {
+            "interfaz": "lo-ssh-26",
+            "ip": "10.253.0.26/32"
+          }
+        ],
+        "gateway": "10.60.30.1"
+      },
+      "rest_coincide": {
+        "nombre": true,
+        "gateway": true,
+        "interfaces": true
+      }
+    },
+    {
+      "nombre": "cisco-lab",
+      "host": "10.60.30.203",
+      "device_type": "cisco_ios",
+      "rol": "lectura",
+      "estado": "ok",
+      "error": null,
+      "datos": {
+        "nombre": "Cisco-LAB1",
+        "uptime": "16 minutes",
+        "interfaces": [
+          {
+            "interfaz": "FastEthernet0/0",
+            "ip": "10.60.30.203"
+          },
+          {
+            "interfaz": "FastEthernet0/1",
+            "ip": "172.16.10.1"
+          }
+        ],
+        "gateway": "10.60.30.1"
+      },
+      "cambio": null,
+      "rest": null,
+      "rest_coincide": null
+    }
+  ]
+}
