@@ -143,6 +143,8 @@ def recolectar(conn, device_type):
     salidas = {}
     for clave_dato, comando in COMANDOS[device_type].items():
         salidas[clave_dato] = conn.send_command(comando, read_timeout=30)
+    # El prompt sirve de respaldo para el nombre si el usuario no puede leer la config
+    salidas["prompt"] = conn.find_prompt()
     return salidas
 
 
@@ -182,7 +184,8 @@ def parsear_mikrotik(salidas):
 def parsear_cisco(salidas):
     """Convierte las salidas de Cisco IOS a un diccionario estructurado."""
     m = re.search(r"hostname\s+(\S+)", salidas["nombre"])
-    nombre = m.group(1) if m else None
+    # Con usuario de solo lectura (privilegio 1) no hay running-config: usar el prompt
+    nombre = m.group(1) if m else salidas.get("prompt", "").rstrip("#>").strip() or None
 
     m = re.search(r"uptime is (.+)", salidas["uptime"])
     uptime = m.group(1).strip() if m else None
@@ -195,8 +198,11 @@ def parsear_cisco(salidas):
             if ip not in ("unassigned", "unassigned)"):
                 interfaces.append({"interfaz": partes[0], "ip": ip})
 
-    m = (re.search(r"Gateway of last resort is (\S+)", salidas["ruta"])
-         or re.search(r"via (\S+)", salidas["ruta"]))
+    # "show ip route 0.0.0.0" lista el siguiente salto como "* 10.60.30.1" o "via 10.60.30.1"
+    ipv4 = r"(\d{1,3}(?:\.\d{1,3}){3})"
+    m = (re.search(rf"^\s*\*\s+{ipv4}", salidas["ruta"], re.MULTILINE)
+         or re.search(rf"via {ipv4}", salidas["ruta"])
+         or re.search(rf"Gateway of last resort is {ipv4}", salidas["ruta"]))
     gateway = m.group(1) if m else None
 
     return {
@@ -224,24 +230,36 @@ def asegurar_lo_ssh(conn, n, nombre_estudiante, limpiar=False):
     """
     bridge = f"{PREFIJO_LO}{n}"
     direccion = f"{IP_LO_BASE}.{n}/32"
-    comentario = f"{ETIQUETA} N{n} {nombre_estudiante}".strip()
+    firma = f"{ETIQUETA} N{n}"                     # identifica SOLO los objetos de este N
+    comentario = f"{firma} {nombre_estudiante}".strip()
 
-    salida_bridges = conn.send_command("/interface bridge print terse")
-    salida_ips = conn.send_command("/ip address print terse")
-    tiene_bridge = bridge in salida_bridges
-    tiene_ip = direccion in salida_ips
+    def estado_actual():
+        """Consulta el equipo: (existe el bridge, existe la IP) buscando el valor exacto."""
+        bridges = conn.send_command(f'/interface bridge print terse where name="{bridge}"')
+        ips = conn.send_command(f'/ip address print terse where address="{direccion}"')
+        # coincidencia exacta: lo-ssh-7 no debe confundirse con lo-ssh-70
+        tiene_b = re.search(rf"(?<![\w-])name={re.escape(bridge)}(\s|$)", bridges) is not None
+        tiene_i = re.search(rf"(?<![\w-])address={re.escape(direccion)}(\s|$)", ips) is not None
+        return tiene_b, tiene_i
 
-    # --- Modo limpieza: borrar solo lo nuestro (firma ETIQUETA) ---
+    tiene_bridge, tiene_ip = estado_actual()
+
+    # --- Modo limpieza: borrar solo lo nuestro (nombre/IP propios + firma con N) ---
     if limpiar:
         if not tiene_bridge and not tiene_ip:
             return {"resultado": "sin cambios", "detalle": "no habia nada que limpiar"}
         comandos = []
         if tiene_ip:
-            comandos.append(f'/ip address remove [find where comment~"{ETIQUETA}"]')
+            comandos.append(f'/ip address remove [find where address="{direccion}" '
+                            f'and comment~"^{firma} "]')
         if tiene_bridge:
-            comandos.append(f'/interface bridge remove [find where comment~"{ETIQUETA}"]')
+            comandos.append(f'/interface bridge remove [find where name="{bridge}" '
+                            f'and comment~"^{firma} "]')
         conn.send_config_set(comandos)
-        return {"resultado": "limpiado", "detalle": f"eliminados objetos de {ETIQUETA}"}
+        if any(estado_actual()):
+            return {"resultado": "error",
+                    "detalle": f"{bridge} sigue existiendo (¿comentario sin la firma {firma}?)"}
+        return {"resultado": "limpiado", "detalle": f"eliminados {bridge} y {direccion}"}
 
     # --- Modo asegurar: crear solo lo que falta ---
     cambios = []
@@ -258,9 +276,7 @@ def asegurar_lo_ssh(conn, n, nombre_estudiante, limpiar=False):
     conn.send_config_set(cambios)
 
     # Verificar con comandos de lectura despues del cambio
-    verif_bridges = conn.send_command("/interface bridge print terse")
-    verif_ips = conn.send_command("/ip address print terse")
-    if bridge in verif_bridges and direccion in verif_ips:
+    if all(estado_actual()):
         return {"resultado": "aplicado", "detalle": f"{bridge} con {direccion}"}
     return {"resultado": "error", "detalle": "no se pudo verificar el cambio"}
 
@@ -341,6 +357,13 @@ def procesar_equipo(equipo, n, nombre_estudiante, args):
             salidas = recolectar(conn, equipo["device_type"])
             registro["datos"] = PARSERS[equipo["device_type"]](salidas)
 
+            # Extra REST (solo MikroTik): se consulta ANTES del cambio para comparar
+            # el mismo estado que se leyo por SSH
+            if equipo["device_type"] == "mikrotik_routeros":
+                datos_rest = recolectar_rest(equipo, password)
+                registro["rest"] = datos_rest
+                registro["rest_coincide"] = comparar_ssh_rest(registro["datos"], datos_rest)
+
             # R6: cambio solo en equipos de escritura
             if equipo["rol"] == "escritura" and equipo["device_type"] == "mikrotik_routeros":
                 if args.limpiar:
@@ -350,12 +373,6 @@ def procesar_equipo(equipo, n, nombre_estudiante, args):
                                           "detalle": "modo --estado (no aplica)"}
                 else:
                     registro["cambio"] = asegurar_lo_ssh(conn, n, nombre_estudiante)
-
-            # Extra REST (solo MikroTik)
-            if equipo["device_type"] == "mikrotik_routeros":
-                datos_rest = recolectar_rest(equipo, password)
-                registro["rest"] = datos_rest
-                registro["rest_coincide"] = comparar_ssh_rest(registro["datos"], datos_rest)
 
     except NetmikoAuthenticationException as error:
         registro["estado"] = "error"
