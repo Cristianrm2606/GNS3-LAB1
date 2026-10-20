@@ -8,9 +8,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Logs de sesion (pueden contener datos sensibles)
-logs/*
-!logs/.gitkeep
+# Logs: el enunciado pide subir logs/ con el session_log de cada equipo.
+# Netmiko no escribe las contrasenas en el session_log. Se excluyen solo
+# logs temporales o de pruebas con datos sensibles:
+logs/*.tmp
+logs/privado_*
 
 # Archivos locales / editor
 .env
